@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(express.json());
+app.use(express.json()); // Middleware for parsing JSON bodies
+
+// Importing the insurance plan routes
+const insurancePlanRoutes = require('./routes/insurancePlanRoutes');
 
 // MongoDB connection string
 
@@ -13,6 +16,9 @@ mongoose.connect(mongoURI)
 .then(() => console.log('MongoDB connected successfully.'))
 .catch(err => console.log('MongoDB connection error', err));
 
+
+// Use the insurance plan routes with '/api/plans' as the base path
+app.use('/api/plans', insurancePlanRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello, World!');
