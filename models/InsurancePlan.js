@@ -1,31 +1,32 @@
 const mongoose = require('mongoose');
 
 const InsurancePlanSchema = new mongoose.Schema({
-    companyName: String,
-    planName: String,
-    inpatientLimit: Number,
-    outpatientLimit: Number,
-    ageMinimum: Number,
-    ageMaximum: Number,
+    companyName: {type: String, required: true, index: true},
+    planName: {type: String, required: true},
+    inpatientLimit: {type: Number, required: true, index: true},
+    outpatientLimit: Number, // Optional
+    ageMinimum: {type: Number, required: true, index: true},
+    ageMaximum: {type: Number, required: true, index: true},
     additionalCovers: {
-        maternity: Boolean,
-        dental: Boolean,
-        optical: Boolean,
+        maternity: Boolean, // Optional
+        dental: Boolean, // Optional
+        optical: Boolean, // Optional
     },
-    hospitalBedPerNight: Number,
-    preExistingConditionsInpatientLimit: Number,
-    personalAccidentCoverLimit: Number,
-    criticalIllnessCoverLimit: Number,
-    lastExpenseFuneralCostsLimit: Number,
-    coPayment: String,
-    panelOfHospitalsLink: String,
-    preExistingConditionsWaitingPeriodYears: Number,
-    maternityWaitingPeriodMonths: Number,
-    illnessClaimsWaitingPeriodMonths: {type: Number, default: 1},
-    surgicalClaimsWaitingPeriodMonths: {type: Number, default: 2},
-    organTransplantWaitingPeriodYears: Number,
-    cancerWaitingPeriodYears: Number,
-    accidentsWaitingPeriod: {type: String, default: "No Waiting!"},
+    hospitalBedPerNight: {type: Number, required: true},
+    preExistingConditionsInpatientLimit: {type: Number, required: true},
+    personalAccidentCoverLimit: Number, // Optional
+    criticalIllnessCoverLimit: Number, // Optional,
+    lastExpenseFuneralCostsLimit: Number, // Optional
+    coPayment: String, // Optional
+    preExistingConditionsWaitingPeriodYears: {type: Number, required: true},
+    maternityWaitingPeriodMonths: Number, // Optional, dependent on maternity cover selection
+    illnessClaimsWaitingPeriodMonths: {type: Number, default: 1, required: true},
+    surgicalClaimsWaitingPeriodMonths: {type: Number, default: 2, required: true},
+    organTransplantWaitingPeriodYears: {type: Number, required: true},
+    cancerWaitingPeriodYears: {type: Number, required: true},
+    accidentsWaitingPeriod: {type: String, default: "No Waiting!", required: true},
+    panelOfHospitalsLink: {type: String, required: true},
+    insurancePlanBrochureLink: {type: String, required: true},
     // Add other fields as necessary
 });
 
