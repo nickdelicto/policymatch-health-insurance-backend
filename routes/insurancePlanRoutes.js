@@ -2,13 +2,96 @@ const express = require('express');
 const router = express.Router();
 const InsurancePlan = require('../models/InsurancePlan');
 
-// Get all insurance plans
+
+// Define a Helper Function for Error Responses
+function sendErrorResponses(res, statusCode, message) {
+    res.status(statusCode).json({error: message});
+}
+
+// Get all insurance plans with optional filtering
 router.get('/', async(req, res) => {
+    let query = {};
+
+    // Independent filter: Inpatient limit can be filtered without other criteria
+    if (req.query.inpatientLimit) {
+        query.inpatientLimit = req.query.inpatientLimit;
+    }
+
+    // Dependent filters: Apply only if their respective dependencies are met
+    // Apply the companyName filter only if the inpatientLimit is also provided
+    if (req.query.companyName && !req.query.inpatientLimit) {
+        return sendErrorResponses(res, 400, "Filtering by company name requires specifying an inpatient limit");
+    }
+
+    if (req.query.companyName && req.query.inpatientLimit) {
+        query.companyName = req.query.companyName;
+    }
+    
+    // Apply the outpatientLimit filter only if the inpatientLimit is also provided
+    if (req.query.outpatientLimit && !req.query.inpatientLimit) {
+        return sendErrorResponses(res, 400, "Filtering by outpatient limit requires specifying an inpatient limit.");
+    }
+
+
+    if (req.query.outpatientLimit && req.query.inpatientLimit) {
+        query.outpatientLimit = req.query.outpatientLimit;
+    }
+
+    // Filtering by principal age requires specifying an inpatient limit
+    if (req.query.principalAge && !req.query.inpatientLimit) {
+        return sendErrorResponses(res, 400, "Filtering by principal age requires specifying an inpatient limit.");
+    }
+
+    // Filtering by spouse age requires specifying both an inpatient limit and principal age
+    if (req.query.spouseAge && (!req.query.inpatientLimit || !req.query.principalAge)) {
+        return sendErrorResponses(res, 400, "Filtering by spouse age requires specifying both an inpatient limit and principal age.");
+    }
+
+    // Filtering by number of kids requires specifying both an inpatient limit and principal age
+    if (req.query.numberOfKids && (!req.query.inpatientLimit || !req.query.principalAge)) {
+        return sendErrorResponses(res, 400, "Filtering by number of kids requires specifying both an inpatient limit and principal age.");
+    }
+    // Additional validation to ensure the number of kids is within the allowed range
+    const numberOfKids = parseInt(req.query.numberOfKids, 10);
+    if (isNaN(numberOfKids) || numberOfKids < 1 || numberOfKids > 5) {
+        return sendErrorResponses(res, 400, "The number of kids must be between 1 and 5.");
+    }
+
+
+    if (req.query.principalAge && req.query.inpatientLimit) {
+        query.ageMinimum = {$lte: req.query.principalAge};
+        query.ageMaximum = {$gte: req.query.principalAge};
+    }
+
+    // Example of handling additional covers with dependencies
+    // Filtering by maternity requires specifying both an inpatient limit and principal age
+    if (req.query.maternity && (!req.query.inpatientLimit || !req.query.principalAge)) {
+        return sendErrorResponses(res, 400, "Filtering by maternity requires specifying both an inpatient limit and principal age.");
+    }
+
+    if (req.query.maternity && req.query.inpatientLimit && req.query.principalAge) {
+        query['additionalCovers.maternity'] = req.query.maternity === 'true';
+    }
+
+    // Filtering by dental requires specifying inpatient limit, principal age, and outpatient limit
+    if (req.query.dental && (!req.query.inpatientLimit || !req.query.principalAge || !req.query.outpatientLimit)) {
+        return sendErrorResponses(res, 400, "Filtering by dental requires specifying inpatient limit, principal age, and outpatient limit.");
+    }
+
+    if (req.query.dental && req.query.inpatientLimit && req.query.principalAge && req.query.outpatientLimit) {
+        query['additionalCovers.dental'] = req.query.dental === 'true';
+        // Automatically include optical if dental is selected
+        query['additionalCovers.optical'] = req.query.dental === 'true';
+    }
+
     try {
-        const plans = await InsurancePlan.find();
+        const plans = await InsurancePlan.find(query);
+        if(plans.length === 0) {
+            return sendErrorResponses(res, 404, "No plans found matching the specified criteria.");
+        }
         res.json(plans);
     } catch (err) {
-        res.status(500).json({message: err.message});
+        return sendErrorResponse(res, 500, "An error occurred while fetching plans.");
     }
 });
 
