@@ -8,9 +8,9 @@ const InsurancePlanSchema = new mongoose.Schema({
     ageMinimum: {type: Number, required: true, index: true},
     ageMaximum: {type: Number, required: true, index: true},
     additionalCovers: {
-        maternity: Boolean, // Optional
-        dental: Boolean, // Optional
-        optical: Boolean, // Optional
+        maternity: {included: Boolean, limit: Number}, // Optional
+        dental: {included: Boolean, limit: Number}, // Optional
+        optical: {included: Boolean, limit: Number}, // Optional
     },
     hospitalBedPerNight: {type: Number, required: true},
     preExistingConditionsInpatientLimit: {type: Number, required: true},
