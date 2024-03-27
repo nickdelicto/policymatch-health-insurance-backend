@@ -48,13 +48,16 @@ router.get('/', async(req, res) => {
     }
 
     // Filtering by number of kids requires specifying both an inpatient limit and principal age
-    if (req.query.numberOfKids && (!req.query.inpatientLimit || !req.query.principalAge)) {
-        return sendErrorResponses(res, 400, "Filtering by number of kids requires specifying both an inpatient limit and principal age.");
-    }
-    // Additional validation to ensure the number of kids is within the allowed range
-    const numberOfKids = parseInt(req.query.numberOfKids, 10);
-    if (isNaN(numberOfKids) || numberOfKids < 1 || numberOfKids > 5) {
-        return sendErrorResponses(res, 400, "The number of kids must be between 1 and 5.");
+    // Check if the numberOfKids query parameter is provided before validating it
+    if (req.query.numberOfKids) {
+        if (!req.query.inpatientLimit || !req.query.principalAge) {
+            return sendErrorResponses(res, 400, "Filtering by number of kids requires specifying both an inpatient limit and principal age.");
+        }
+        // Additional validation to ensure the number of kids is within the allowed range
+        const numberOfKids = parseInt(req.query.numberOfKids, 10);
+        if (isNaN(numberOfKids) || numberOfKids < 1 || numberOfKids > 5) {
+            return sendErrorResponses(res, 400, "The number of kids must be between 1 and 5.");
+        }
     }
 
 
