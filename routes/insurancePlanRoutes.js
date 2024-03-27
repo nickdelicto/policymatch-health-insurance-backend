@@ -107,9 +107,9 @@ router.post('/', async(req, res) => {
         ageMaximum: req.body.ageMaximum,
 
         additionalCovers: {
-            maternity: req.body.maternity,
-            dental: req.body.dental,
-            optical: req.body.optical
+            maternity: req.body.additionalCovers.maternity,
+            dental: req.body.additionalCovers.dental,
+            optical: req.body.additionalCovers.optical
         },
         hospitalBedPerNight: req.body.hospitalBedPerNight,
         preExistingConditionsInpatientLimit: req.body.preExistingConditionsInpatientLimit,
