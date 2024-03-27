@@ -155,7 +155,7 @@ router.get('/:id', getPlan, (req, res) => {
 router.patch('/:id', getPlan, async (req, res) => {
     // 1st, Dynamically update top-level fields, ensuring they're not nested objects
     Object.keys(req.body).forEach(prop => {
-        if (req.body[prop] != null && typeof res.plan[prop] !== 'object' && res.plan[prop] !== undefined) {
+        if (req.body[prop] != null && prop !== 'additionalCovers' && res.plan[prop] !== undefined) {
             res.plan[prop] = req.body[prop];
         }
     });
@@ -172,7 +172,7 @@ router.patch('/:id', getPlan, async (req, res) => {
             }
         });
     }
-    
+
 
     try {
         const updatedPlan = await res.plan.save();
