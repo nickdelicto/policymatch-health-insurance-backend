@@ -107,9 +107,18 @@ router.post('/', async(req, res) => {
         ageMaximum: req.body.ageMaximum,
 
         additionalCovers: {
-            maternity: req.body.additionalCovers.maternity,
-            dental: req.body.additionalCovers.dental,
-            optical: req.body.additionalCovers.optical
+            maternity: {
+                included: req.body.additionalCovers.maternity.included,
+                limit: req.body.additionalCovers.maternity.limit
+            },
+            dental: {
+                included: req.body.additionalCovers.dental.included,
+                limit: req.body.additionalCovers.dental.limit
+            },
+            optical: {
+                included: req.body.additionalCovers.optical.included,
+                limit: req.body.additionalCovers.optical.limit
+            }      
         },
         hospitalBedPerNight: req.body.hospitalBedPerNight,
         preExistingConditionsInpatientLimit: req.body.preExistingConditionsInpatientLimit,
@@ -154,11 +163,16 @@ router.patch('/:id', getPlan, async (req, res) => {
     // 2nd, special handling for the 'additionalCovers' nested object
     if (req.body.additionalCovers) {
         Object.keys(req.body.additionalCovers).forEach(cover => {
-            if (req.body.additionalCovers[cover] != null && res.plan.additionalCovers[cover] !== undefined) {
-                res.plan.additionalCovers[cover] = req.body.additionalCovers[cover];
+            if (req.body.additionalCovers[cover] != null && res.plan.additionalCovers[cover] != undefined) {
+                res.plan.additionalCovers[cover].included = req.body.additionalCovers[cover].included;
+                // Only update the limit if it's provided
+                if (req.body.additionalCovers[cover].limit != null) {
+                    res.plan.additionalCovers[cover].limit = req.body.additionalCovers[cover].limit;
+                }
             }
         });
     }
+    
 
     try {
         const updatedPlan = await res.plan.save();
