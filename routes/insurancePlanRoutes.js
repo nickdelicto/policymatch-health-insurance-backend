@@ -154,6 +154,23 @@ router.get('/:id', getPlan, (req, res) => {
     res.json(res.plan);
 });
 
+// Bulk update multiple insurance plans based on a specific criterion
+// Reminder: Implement authentication and authorization checks here
+router.patch('/bulk-update', async (req, res) => {
+    const {matchCondition, updates} = req.body; // Example: matchCondition: {companyName: "Jubilee Health Insurance"}, updates: {companyName: "Jubilee Allianz Health Insurance", inpatientLimitName: "Hospitalization Limit"}
+    
+    try{
+        // Security Placeholder: Ensure to check user permissions before proceeding with the bulk update
+        const updatedPlans = await InsurancePlan.updateMany(matchCondition, {$set: updates});
+        if (updatedPlans.modifiedCount === 0) {
+            return res.status(404).json({message: 'No plans found or no update required for the provided condition.'});
+        }
+        res.json({message: `${updatedPlans.modifiedCount} plans updated.`});
+    } catch (err) {
+        res.status(500).json({message: err.message});
+    }
+});
+
 // Update an insurance plan
 router.patch('/:id', getPlan, async (req, res) => {
     // 1st, Dynamically update top-level fields, ensuring they're not nested objects
