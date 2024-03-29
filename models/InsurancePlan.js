@@ -27,6 +27,7 @@ const InsurancePlanSchema = new mongoose.Schema({
     accidentsWaitingPeriod: {type: String, default: "No Waiting!", required: true},
     panelOfHospitalsLink: {type: String, required: true},
     insurancePlanBrochureLink: {type: String, required: true},
+    applicationFormLink: {type: String, required: true},
     // Add other fields as necessary
 });
 
