@@ -138,6 +138,7 @@ router.post('/', async(req, res) => {
         accidentsWaitingPeriod: req.body.accidentsWaitingPeriod,
         panelOfHospitalsLink: req.body.panelOfHospitalsLink,
         insurancePlanBrochureLink: req.body.insurancePlanBrochureLink,
+        applicationFormLink: req.body.applicationFormLink,
     });
     
     // Attempt to save the new plan
@@ -170,6 +171,27 @@ router.patch('/bulk-update', async (req, res) => {
         res.status(500).json({message: err.message});
     }
 });
+
+// Bulk remove  a specific property from plans based on criteria
+router.patch('/bulk-remove-property', async (req, res) => {
+    const {criteria, propertyToRemove} = req.body;
+
+        // TODO: Add authentication check here before proceeding with the removal
+
+    try {
+        // Set the property to undefined for all matching documents
+        const update = {$unset: {[propertyToRemove]: ""}};
+        console.log(await InsurancePlan.find(criteria));
+        const result = await InsurancePlan.updateMany(criteria, update);
+
+        // Respond with the number of documents updated
+        res.json({message: `${result.modifiedCount} plans updated to remove ${propertyToRemove}.`});
+    } catch (err) {
+        // Handle potential errors
+        res.status(500).json({message: err.message});
+    }
+});
+
 
 // Update an insurance plan
 router.patch('/:id', getPlan, async (req, res) => {
