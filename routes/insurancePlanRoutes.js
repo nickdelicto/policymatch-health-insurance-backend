@@ -186,9 +186,12 @@ router.patch('/:id', getPlan, async (req, res) => {
 });
 
 // Delete an insurance plan
-router.delete('/:id', getPlan, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
-        await res.plan.remove();
+        const deletedPlan = await InsurancePlan.findByIdAndDelete(req.params.id);
+        if (!deletedPlan) {
+            return res.status(404).json({message: 'Cannot find plan'});
+        }
         res.json({message: 'Deleted Insurance Plan'});
     } catch (err) {
         res.status(500).json({message: err.message});
