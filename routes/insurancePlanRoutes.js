@@ -160,7 +160,7 @@ router.patch('/bulk-update', async (req, res) => {
     const {matchCondition, updates} = req.body; // Example: matchCondition: {companyName: "Jubilee Health Insurance"}, updates: {companyName: "Jubilee Allianz Health Insurance", inpatientLimitName: "Hospitalization Limit"}
     
     try{
-        // Security Placeholder: Ensure to check user permissions before proceeding with the bulk update
+        // TODO: Ensure to check user permissions before proceeding with the bulk update
         const updatedPlans = await InsurancePlan.updateMany(matchCondition, {$set: updates});
         if (updatedPlans.modifiedCount === 0) {
             return res.status(404).json({message: 'No plans found or no update required for the provided condition.'});
@@ -202,7 +202,7 @@ router.patch('/:id', getPlan, async (req, res) => {
     }
 });
 
-// First, define the batch delete route- Delete multiple insurance plans
+// First, define the batch delete route- Delete multiple insurance plans based on several plan IDs
 router.delete('/batch', async (req, res) => {
     console.log(req.body.ids); // Logging to debug
     const IdsToDelete = req.body.ids; // Expect an array of IDs in the request body
@@ -210,6 +210,24 @@ router.delete('/batch', async (req, res) => {
         const result = await InsurancePlan.deleteMany({_id: {$in: IdsToDelete}});
         res.json({message: `${result.deletedCount} plans deleted.`});
     } catch (err) {
+        res.status(500).json({message: err.message});
+    }
+});
+
+// Bulk delete plans based on specific criteria
+router.delete('/bulk-delete', async (req, res) => {
+    const criteria = req.body; // Example criteria could include companyName, planName, etc.
+
+    // TODO: Add authentication check here before proceeding with the deletion
+
+    try {
+        // Perform the deletion based on matching criteria
+        const result = await InsurancePlan.deleteMany(criteria);
+
+        // Respond with the number of documents deleted
+        res.json({message: `${result.deletedCount} plans deleted.`});
+    } catch (err) {
+        // Handle potential errors
         res.status(500).json({message: err.message});
     }
 });
