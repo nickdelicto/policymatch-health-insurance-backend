@@ -185,7 +185,20 @@ router.patch('/:id', getPlan, async (req, res) => {
     }
 });
 
-// Delete an insurance plan
+// First, define the batch delete route- Delete multiple insurance plans
+router.delete('/batch', async (req, res) => {
+    console.log(req.body.ids); // Logging to debug
+    const IdsToDelete = req.body.ids; // Expect an array of IDs in the request body
+    try {
+        const result = await InsurancePlan.deleteMany({_id: {$in: IdsToDelete}});
+        res.json({message: `${result.deletedCount} plans deleted.`});
+    } catch (err) {
+        res.status(500).json({message: err.message});
+    }
+});
+
+
+// Then, define the delete route by ID- Delete an insurance plan
 router.delete('/:id', async (req, res) => {
     try {
         const deletedPlan = await InsurancePlan.findByIdAndDelete(req.params.id);
@@ -197,6 +210,7 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({message: err.message});
     }
 });
+
 
 // Middleware to get a plan by ID
 async function getPlan(req, res, next) {
