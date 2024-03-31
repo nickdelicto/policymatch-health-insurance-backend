@@ -38,12 +38,30 @@ router.get('/', async(req, res) => {
     }
 
     // Filtering by principal age requires specifying an inpatient limit
-    if (req.query.principalAge && !req.query.inpatientLimit) {
+    if(req.query.principalAge && req.query.inpatientLimit) {
+        const principalAge = parseInt(req.query.principalAge, 10);
+        // Ensure principal age is within the plan's age range
+        query.ageMinimum = {$lte: principalAge};
+        query.ageMaximum = {$gte: principalAge};
+    } else if (req.query.principalAge && !req.query.inpatientLimit) {
         return sendErrorResponses(res, 400, "Filtering by principal age requires specifying an inpatient limit.");
     }
 
     // Filtering by spouse age requires specifying both an inpatient limit and principal age
-    if (req.query.spouseAge && (!req.query.inpatientLimit || !req.query.principalAge)) {
+    if (req.query.spouseAge && req.query.inpatientLimit && req.query.principalAge) {
+        const spouseAge = parseInt(req.query.spouseAge, 10);
+        // If our data model required additional logic for spouse, we could implement it here
+        // Ensure spouse age is within the plan's age range
+        if (!isNaN(spouseAge)) {
+            /*Since MongoDB doesn't directly support multiple conditions for the same field in one query object,
+            we need to ensure the logic here properly insersects with principalAge logic or
+            consider a different approach to validate both ages are within the band if this doesn't work as expected.*/ 
+            query.$and = [
+                {ageMinimum: {$lte: spouseAge}},
+                {ageMaximum: {$gte: spouseAge}}
+            ];
+        }
+    } else if (req.query.spouseAge && (!req.query.inpatientLimit || !req.query.principalAge)) {
         return sendErrorResponses(res, 400, "Filtering by spouse age requires specifying both an inpatient limit and principal age.");
     }
 
