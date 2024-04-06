@@ -11,112 +11,115 @@ function sendErrorResponses(res, statusCode, message) {
 // Get all insurance plans with optional filtering
 router.get('/', async(req, res) => {
     let query = {};
+    let errors = [];
 
     // Independent filter: Inpatient limit can be filtered without other criteria
     if (req.query.inpatientLimit) {
-        query.inpatientLimit = req.query.inpatientLimit;
+        query.inpatientLimit = parseInt(req.query.inpatientLimit);
+    } else {
+        errors.push("Inpatient limit is required for filtering.");
     }
 
     // Dependent filters: Apply only if their respective dependencies are met
-    // Apply the companyName filter only if the inpatientLimit is also provided
-    if (req.query.companyName && !req.query.inpatientLimit) {
-        return sendErrorResponses(res, 400, "Filtering by company name requires specifying an inpatient limit");
+    // Company Name filter depends on Inpatient Limit
+    if (req.query.companyName) {
+        if (!req.query.inpatientLimit) {
+            errors.push("Filtering by company name requires specifying an inpatient limit.");
+        } else {
+            query.companyName = req.query.companyName;
+        }
     }
 
-    if (req.query.companyName && req.query.inpatientLimit) {
-        query.companyName = req.query.companyName;
-    }
     
-    // Apply the outpatientLimit filter only if the inpatientLimit is also provided
-    if (req.query.outpatientLimit && !req.query.inpatientLimit) {
-        return sendErrorResponses(res, 400, "Filtering by outpatient limit requires specifying an inpatient limit.");
-    }
-
-
-    if (req.query.outpatientLimit && req.query.inpatientLimit) {
-        query.outpatientLimit = req.query.outpatientLimit;
-    }
-
-    // Filtering by principal age requires specifying an inpatient limit
-    if(req.query.principalAge && req.query.inpatientLimit) {
-        const principalAge = parseInt(req.query.principalAge, 10);
-        // Ensure principal age is within the plan's age range
-        query.ageMinimum = {$lte: principalAge};
-        query.ageMaximum = {$gte: principalAge};
-    } else if (req.query.principalAge && !req.query.inpatientLimit) {
-        return sendErrorResponses(res, 400, "Filtering by principal age requires specifying an inpatient limit.");
-    }
-
-    // Filtering by spouse age requires specifying both an inpatient limit and principal age
-    if (req.query.spouseAge && req.query.inpatientLimit && req.query.principalAge) {
-        const spouseAge = parseInt(req.query.spouseAge, 10);
-        // If our data model required additional logic for spouse, we could implement it here
-        // Ensure spouse age is within the plan's age range
-        if (!isNaN(spouseAge)) {
-            /*Since MongoDB doesn't directly support multiple conditions for the same field in one query object,
-            we need to ensure the logic here properly insersects with principalAge logic or
-            consider a different approach to validate both ages are within the band if this doesn't work as expected.*/ 
-            query.$and = [
-                {ageMinimum: {$lte: spouseAge}},
-                {ageMaximum: {$gte: spouseAge}}
-            ];
+    // Outpatient Limit filter also depends on Inpatient Limit
+    if (req.query.outpatientLimit) {
+        if (!req.query.inpatientLimit) {
+            errors.push("Filtering by outpatient limit requires specifying an inpatient limit.")
+        } else {
+            query.outpatientLimit = parseInt(req.query.outpatientLimit);
         }
-    } else if (req.query.spouseAge && (!req.query.inpatientLimit || !req.query.principalAge)) {
-        return sendErrorResponses(res, 400, "Filtering by spouse age requires specifying both an inpatient limit and principal age.");
     }
 
-    // Filtering by number of kids requires specifying both an inpatient limit and principal age
-    // Check if the numberOfKids query parameter is provided before validating it
-    if (req.query.numberOfKids) {
+
+    // Principal Age filter consolidation with Inpatient Limit dependency
+    if (req.query.principalAge) {
+        if (!req.query.inpatientLimit) {
+            errors.push("Filtering by principal age requires specifying an inpatient limit.")
+        } else {
+            let age = parseInt(req.query.principalAge);
+            query.ageMinimum = {$lte: age};
+            query.ageMaximum = {$gte: age};
+        }
+    }
+
+
+    // Spouse Age filter with Inpatient Limit and Principal Age dependency
+    if (req.query.spouseAge) {
         if (!req.query.inpatientLimit || !req.query.principalAge) {
-            return sendErrorResponses(res, 400, "Filtering by number of kids requires specifying both an inpatient limit and principal age.");
+            errors.push("Filtering by spouse age requires specifying both an inpatient limit and principal age.")
+        } else {
+            let age = parseInt(req.query.spouseAge);
+            query.$and = query.$and ? [...query.$and, {ageMinimum: {$lte: age}, ageMaximum: {$gte: age}}]
+                                        : [{ageMinimum: {$lte: age}, ageMaximum: {$gte: age}}];
         }
-        // Additional validation to ensure the number of kids is within the allowed range
+    }
+
+
+    // Filtering by Number of Kids
+    if (req.query.numberOfKids) {
         const numberOfKids = parseInt(req.query.numberOfKids, 10);
-        if (isNaN(numberOfKids) || numberOfKids < 1 || numberOfKids > 5) {
-            return sendErrorResponses(res, 400, "The number of kids must be between 1 and 5.");
+        if(!req.query.inpatientLimit || !req.query.principalAge || isNaN(numberOfKids) || numberOfKids < 1 || numberOfKids > 5) {
+            return sendErrorResponses(res, 400, "Filtering by number of kids requires specifying both an inpatient limit and principal age. Number of kids must be between 1 and 5.");
+        } else {
+            // Ensuring the query only targets plans that allow kids
+            query.allowsKids = true;
         }
     }
 
 
-    if (req.query.principalAge && req.query.inpatientLimit) {
-        query.ageMinimum = {$lte: req.query.principalAge};
-        query.ageMaximum = {$gte: req.query.principalAge};
+
+
+    // Additional cover filters with dependencies
+    // 1. Maternity
+    if (req.query.maternity) {
+        if (!req.query.inpatientLimit || !req.query.principalAge) {
+            errors.push("Filtering by maternity cover requires specifying both an inpatient limit and principal age.")
+        } else {
+            query["additionalCovers.maternity.included"] = req.query.maternity === 'true';
+        }
     }
 
-    // Example of handling additional covers with dependencies
-    // Filtering by maternity requires specifying both an inpatient limit and principal age
-    if (req.query.maternity && (!req.query.inpatientLimit || !req.query.principalAge)) {
-        return sendErrorResponses(res, 400, "Filtering by maternity requires specifying both an inpatient limit and principal age.");
+    // 2. Dental & Optical
+    if (req.query.dental) {
+        if (!req.query.inpatientLimit || !req.query.principalAge || !req.query.outpatientLimit) {
+            errors.push("Filtering by dental cover requires specifying inpatient limit, principal age, and outpatient limit.");
+        } else {
+            query["additionalCovers.dental.included"] = req.query.dental === 'true';
+            // Automatically include optical cover if dental is selected
+            query["additionalCovers.optical.included"] = true;
+        }
     }
 
-    if (req.query.maternity && req.query.inpatientLimit && req.query.principalAge) {
-        query['additionalCovers.maternity'] = req.query.maternity === 'true';
+
+    // Handling errors
+    if (errors.length > 0) {
+        return sendErrorResponses(res, 400, errors.join(" "));
     }
 
-    // Filtering by dental requires specifying inpatient limit, principal age, and outpatient limit
-    if (req.query.dental && (!req.query.inpatientLimit || !req.query.principalAge || !req.query.outpatientLimit)) {
-        return sendErrorResponses(res, 400, "Filtering by dental requires specifying inpatient limit, principal age, and outpatient limit.");
-    }
 
-    if (req.query.dental && req.query.inpatientLimit && req.query.principalAge && req.query.outpatientLimit) {
-        query['additionalCovers.dental'] = req.query.dental === 'true';
-        // Automatically include optical if dental is selected
-        query['additionalCovers.optical'] = req.query.dental === 'true';
-    }
 
-    console.log('Final query object:', query);
-
+    // Executing query with built filters
     try {
         const plans = await InsurancePlan.find(query);
-        if(plans.length === 0) {
-            return sendErrorResponses(res, 404, "No plans found matching the specified criteria.");
+        if (plans.length === 0) {
+            return res.status(404).send("No plans found matching the specified criteria.")
         }
         res.json(plans);
     } catch (err) {
-        return sendErrorResponse(res, 500, "An error occurred while fetching plans.");
-    }
+        res.status(500).send("An error occurred while fetching plans: " + err.message);
+    };
 });
+
 
 // Create a new insurance plan
 router.post('/', async(req, res) => {
@@ -128,6 +131,7 @@ router.post('/', async(req, res) => {
         outpatientLimit: req.body.outpatientLimit,
         ageMinimum: req.body.ageMinimum,
         ageMaximum: req.body.ageMaximum,
+        allowsKids: req.body.allowsKids,
 
         additionalCovers: {
             maternity: {
