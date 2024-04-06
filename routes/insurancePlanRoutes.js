@@ -105,6 +105,8 @@ router.get('/', async(req, res) => {
         query['additionalCovers.optical'] = req.query.dental === 'true';
     }
 
+    console.log('Final query object:', query);
+
     try {
         const plans = await InsurancePlan.find(query);
         if(plans.length === 0) {
