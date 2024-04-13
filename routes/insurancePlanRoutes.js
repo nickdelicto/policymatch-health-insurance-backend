@@ -150,22 +150,6 @@ router.get('/', async(req, res) => {
 });
 
 
-// Get unique outpatient limits based on inpatient limit
-router.get('/outpatient-limits/:inpatientLimit', async (req, res) => {
-    const inpatientLimit = parseInt(req.params.inpatientLimit);
-    if (isNaN(inpatientLimit)) {
-        return res.status(400).json({error: 'Invalid inpatient limit'});
-    }
-
-    try {
-        const limits = await InsurancePlan.distinct('outpatientLimit', {inpatientLimit: inpatientLimit, outpatientLimit: {$ne: null}});
-        res.json(limits.sort((a, b) => a - b)); // Return limits sorted numerically
-    } catch (error) {
-        res.status(500).json({error: error.message});
-    }
-});
-
-
 // Create a new insurance plan
 router.post('/', async(req, res) => {
     const plan = new InsurancePlan({
