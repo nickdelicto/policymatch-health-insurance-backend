@@ -32,16 +32,25 @@ router.get('/', async(req, res) => {
 
     
     // Outpatient Limit filter also depends on Inpatient Limit
-    if (req.query.outpatientLimit) {
-        if (req.query.outpatientLimit === 'none') {
-            // If 'none' is specified, do not use outpatient limit in query
-            // Plans can still be returned but without considering outpatient limits
-        } else if (!req.query.inpatientLimit) {
+    if (req.query.outpatientLimit && req.query.outpatientLimit !== 'none') {
+        if (!req.query.inpatientLimit) {
             errors.push("Filtering by outpatient limit requires specifying an inpatient limit.")
         } else {
             query.outpatientLimit = parseInt(req.query.outpatientLimit);
         }
     }
+    
+    
+    // if (req.query.outpatientLimit) {
+    //     if (req.query.outpatientLimit === 'none') {
+    //         // If 'none' is specified, do not use outpatient limit in query
+    //         // Plans can still be returned but without considering outpatient limits
+    //     } else if (!req.query.inpatientLimit) {
+    //         errors.push("Filtering by outpatient limit requires specifying an inpatient limit.")
+    //     } else {
+    //         query.outpatientLimit = parseInt(req.query.outpatientLimit);
+    //     }
+    // }
 
     // Principal Age filter consolidation with Inpatient Limit dependency
     if (req.query.principalAge) {
@@ -92,15 +101,33 @@ router.get('/', async(req, res) => {
     }
 
     // 2. Dental & Optical
-    if (req.query.dental) {
-        if (!req.query.inpatientLimit || !req.query.principalAge || !req.query.outpatientLimit) {
-            errors.push("Filtering by dental cover requires specifying inpatient limit, principal age, and outpatient limit.");
-        } else {
-            query["additionalCovers.dental.included"] = req.query.dental === 'true';
-            // Automatically include optical cover if dental is selected
-            query["additionalCovers.optical.included"] = true;
-        }
+    if ((req.query.dental === 'Yes' || req.query.optical === 'Yes') && (!req.query.outpatientLimit || req.query.outpatientLimit === 'none')) {
+        errors.push("Dental and Optical coverage require a valid outpatient limit.");
+    } else if (req.query.dental === 'Yes' && req.query.outpatientLimit && req.query.outpatientLimit !== 'none') {
+        query["additionalCovers.dental.included"] = true;
+        query["additionalCovers.optical.included"] = true; // Optical always pairs with Dental    
+
     }
+
+    // if (req.query.dental === 'Yes' && (!req.query.outpatientLimit || req.query.outpatientLimit === 'none')) {
+    //     errors.push("Dental/Optical cover requires specifying an valid Outpatient limit.");
+    //     } else  if (req.query.dental === 'Yes' && req.query.outpatientLimit && req.query.outpatientLimit !== 'none'){
+    //         query["additionalCovers.dental.included"] = true;
+    //         query["additionalCovers.optical.included"] = true; // Optical always pairs with Dental    
+    //     }
+    // }
+    
+    
+    
+    // if (req.query.dental) {
+    //     if (!req.query.inpatientLimit || !req.query.principalAge || !req.query.outpatientLimit) {
+    //         errors.push("Filtering by dental cover requires specifying inpatient limit, principal age, and outpatient limit.");
+    //     } else {
+    //         query["additionalCovers.dental.included"] = req.query.dental === 'true';
+    //         // Automatically include optical cover if dental is selected
+    //         query["additionalCovers.optical.included"] = true;
+    //     }
+    // }
 
 
     // Handling errors
