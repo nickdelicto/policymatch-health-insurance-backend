@@ -33,13 +33,15 @@ router.get('/', async(req, res) => {
     
     // Outpatient Limit filter also depends on Inpatient Limit
     if (req.query.outpatientLimit) {
-        if (!req.query.inpatientLimit) {
+        if (req.query.outpatientLimit === 'none') {
+            // If 'none' is specified, do not use outpatient limit in query
+            // Plans can still be returned but without considering outpatient limits
+        } else if (!req.query.inpatientLimit) {
             errors.push("Filtering by outpatient limit requires specifying an inpatient limit.")
         } else {
             query.outpatientLimit = parseInt(req.query.outpatientLimit);
         }
     }
-
 
     // Principal Age filter consolidation with Inpatient Limit dependency
     if (req.query.principalAge) {
@@ -108,7 +110,7 @@ router.get('/', async(req, res) => {
 
 
 
-    // Executing query with built filters
+    // Executing final query with built filters
     try {
         const plans = await InsurancePlan.find(query);
         if (plans.length === 0) {
