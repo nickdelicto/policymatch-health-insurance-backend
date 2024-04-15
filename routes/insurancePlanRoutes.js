@@ -131,8 +131,8 @@ router.get('/outpatient-limits/:inpatientLimit', async (req, res) => {
             inpatientLimit: inpatientLimit,
             outpatientLimit: {$ne: null} // Ensure no null values are considered
         });
-        // Always include 'No Outpatient' option at the beginning of list
-        const formattedLimits = ['No Outpatient', ...limits.sort((a, b) => a - b).map(limit => `Kshs ${limit}`)];
+        // Return sorted limits without including 'No Outpatient' automatically
+        const formattedLimits = limits.sort((a, b) => a - b).map(limit => `Kshs ${limit}`);
         res.json(formattedLimits);
     } catch (error) {
         res.status(500).json({error: error.message});
