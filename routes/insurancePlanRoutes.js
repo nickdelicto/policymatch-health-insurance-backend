@@ -99,14 +99,6 @@ router.get('/', async(req, res) => {
     }
 
     // 2. Dental & Optical Filters
-    // if ((req.query.dental === 'Yes' || req.query.optical === 'Yes') && (req.query.outpatientLimit === 'none' || !req.query.outpatientLimit)) {
-    //     errors.push("Filtering by dental/optical requires specifying a valid outpatient limit.");
-    // } else if (req.query.dental === 'Yes') {
-    //     query["additionalCovers.dental.included"] = true;
-    //     query["additionalCovers.optical.included"] = true; // Optical always pairs with Dental
-    // }
-
-
     if (req.query.dental === 'yes' || req.query.optical === 'yes') {
         if (req.query.outpatientLimit === 'none' || !req.query.outpatientLimit) {
             errors.push("Filtering by dental/optical requires specifying a valid outpatient limit.");
@@ -115,18 +107,6 @@ router.get('/', async(req, res) => {
             query["additionalCovers.optical.included"] = req.query.optical === 'yes' || req.query.dental === 'yes'; // Ensure optical is included if either is true
         }
     }
-
-
-    // if (req.query.dental) {
-    //     if (!req.query.inpatientLimit || !req.query.principalAge || !req.query.outpatientLimit) {
-    //         errors.push("Filtering by dental cover requires specifying inpatient limit, principal age, and outpatient limit.");
-    //     } else {
-    //         query["additionalCovers.dental.included"] = req.query.dental === 'true';
-    //         // Automatically include optical cover if dental is selected
-    //         query["additionalCovers.optical.included"] = true;
-    //     }
-    // }
-
 
     // Handling errors
     if (errors.length > 0) {
