@@ -7,6 +7,13 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({origin: 'http://localhost:3000'})); // Use the cors middleware- Enables CORS for all routes and origins
 app.use(express.json()); // Middleware for parsing JSON bodies
 
+
+// Enable CORS for all responses
+app.use(cors({
+    origin: 'http://localhost:3000' // This allows all endpoints to be accessed from the front-end URL
+}));
+
+
 // Importing the insurance plan routes
 const insurancePlanRoutes = require('./routes/insurancePlanRoutes');
 

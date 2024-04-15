@@ -40,15 +40,6 @@ router.get('/', async(req, res) => {
         }
     }
     
-    
-    // if (req.query.outpatientLimit) {
-    //     if (!req.query.inpatientLimit) {
-    //         errors.push("Filtering by outpatient limit requires specifying an inpatient limit.")
-    //     } else {
-    //         query.outpatientLimit = parseInt(req.query.outpatientLimit);
-    //     }
-    // }
-
 
     // Principal Age filter consolidation with Inpatient Limit dependency
     if (req.query.principalAge) {
@@ -125,6 +116,27 @@ router.get('/', async(req, res) => {
     } catch (err) {
         res.status(500).send("An error occurred while fetching plans: " + err.message);
     };
+});
+
+
+// Endpoint to Get unique Outpatient limits based on Inpatient limit
+router.get('/outpatient-limits/:inpatientLimit', async (req, res) => {
+    const inpatientLimit = parseInt(req.params.inpatientLimit);
+    if (isNaN(inpatientLimit)) {
+        return res.status(400).json({error: 'Invalid inpatient limit'});
+    }
+
+    try {
+        const limits = await InsurancePlan.distinct('outpatientLimit', {
+            inpatientLimit: inpatientLimit,
+            outpatientLimit: {$ne: null} // Ensure no null values are considered
+        });
+        // Return sorted limits without including 'No Outpatient' automatically
+        const formattedLimits = limits.sort((a, b) => a - b).map(limit => `Kshs ${limit}`);
+        res.json(formattedLimits);
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
 });
 
 
